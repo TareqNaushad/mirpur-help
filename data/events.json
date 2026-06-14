@@ -19,7 +19,7 @@
       "lat": 23.8069,
       "lng": 90.3686,
       "phone": "16732",
-      "verified": false
+      "verified": true
     },
     {
       "id": "food-drive-mirpur-2",
@@ -37,10 +37,10 @@
       "endTime": "16:00",
       "location": "মিরপুর ২ মসজিদের সামনে",
       "locationEn": "In front of Mirpur 2 Mosque",
-      "lat": 23.8140,
-      "lng": 90.3650,
+      "lat": 23.814,
+      "lng": 90.365,
       "phone": "02-47119229",
-      "verified": false
+      "verified": true
     },
     {
       "id": "vaccination-camp-mirpur-3",
@@ -58,10 +58,10 @@
       "endTime": "12:00",
       "location": "মিরপুর থানা স্বাস্থ্য কেন্দ্র",
       "locationEn": "Mirpur Thana Health Centre",
-      "lat": 23.8200,
-      "lng": 90.3670,
+      "lat": 23.82,
+      "lng": 90.367,
       "phone": "333",
-      "verified": false
+      "verified": true
     },
     {
       "id": "skills-training-mirpur-4",
@@ -79,10 +79,10 @@
       "endTime": "15:00",
       "location": "মিরপুর ৬ ব্র্যাক কার্যালয়",
       "locationEn": "BRAC Office, Mirpur 6",
-      "lat": 23.8050,
-      "lng": 90.3680,
+      "lat": 23.805,
+      "lng": 90.368,
       "phone": "16445",
-      "verified": false
+      "verified": true
     },
     {
       "id": "eye-camp-mirpur-5",
@@ -100,10 +100,10 @@
       "endTime": "13:00",
       "location": "মিরপুর ১০ ওয়ার্ড অফিসের পাশে",
       "locationEn": "Near Mirpur 10 Ward Office",
-      "lat": 23.8000,
-      "lng": 90.3650,
+      "lat": 23.8,
+      "lng": 90.365,
       "phone": "333",
-      "verified": false
+      "verified": true
     }
   ]
 }

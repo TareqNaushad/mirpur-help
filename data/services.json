@@ -1,163 +1,268 @@
 {
   "categories": [
-    { "id": "medical",   "bn": "চিকিৎসা",        "en": "Medical",        "icon": "🏥", "color": "#e63946" },
-    { "id": "medicine",  "bn": "ঔষধ",            "en": "Medicine",       "icon": "💊", "color": "#2a9d8f" },
-    { "id": "food",      "bn": "খাবার",          "en": "Food",           "icon": "🍚", "color": "#e9a23b" },
-    { "id": "shelter",   "bn": "আশ্রয়",          "en": "Shelter",        "icon": "🏠", "color": "#6a4c93" },
-    { "id": "clothes",   "bn": "কাপড়",           "en": "Clothes",        "icon": "👕", "color": "#457b9d" },
-    { "id": "cash",      "bn": "আর্থিক সহায়তা",  "en": "Cash / Allowance", "icon": "💰", "color": "#1d8a4e" },
-    { "id": "education", "bn": "শিক্ষা",          "en": "Education",      "icon": "🎓", "color": "#3a86ff" }
+    {
+      "id": "medical",
+      "bn": "চিকিৎসা",
+      "en": "Medical",
+      "icon": "🏥",
+      "color": "#e63946"
+    },
+    {
+      "id": "medicine",
+      "bn": "ঔষধ",
+      "en": "Medicine",
+      "icon": "💊",
+      "color": "#2a9d8f"
+    },
+    {
+      "id": "food",
+      "bn": "খাবার",
+      "en": "Food",
+      "icon": "🍚",
+      "color": "#e9a23b"
+    },
+    {
+      "id": "shelter",
+      "bn": "আশ্রয়",
+      "en": "Shelter",
+      "icon": "🏠",
+      "color": "#6a4c93"
+    },
+    {
+      "id": "clothes",
+      "bn": "কাপড়",
+      "en": "Clothes",
+      "icon": "👕",
+      "color": "#457b9d"
+    },
+    {
+      "id": "cash",
+      "bn": "আর্থিক সহায়তা",
+      "en": "Cash / Allowance",
+      "icon": "💰",
+      "color": "#1d8a4e"
+    },
+    {
+      "id": "education",
+      "bn": "শিক্ষা",
+      "en": "Education",
+      "icon": "🎓",
+      "color": "#3a86ff"
+    }
   ],
   "helplines": [
-    { "number": "999",   "bn": "জাতীয় জরুরি সেবা",          "en": "National Emergency (Police/Fire/Ambulance)" },
-    { "number": "333",   "bn": "সরকারি তথ্য ও সমাজসেবা",     "en": "Govt info & social services / report distress" },
-    { "number": "109",   "bn": "নারী ও শিশু নির্যাতন",        "en": "Violence against Women & Children" },
-    { "number": "1098",  "bn": "শিশু সহায়তা",               "en": "Child Helpline Bangladesh" },
-    { "number": "16263", "bn": "স্বাস্থ্য বাতায়ন",           "en": "Shasthyo Batayon — free health advice" }
+    {
+      "number": "999",
+      "bn": "জাতীয় জরুরি সেবা",
+      "en": "National Emergency (Police/Fire/Ambulance)"
+    },
+    {
+      "number": "333",
+      "bn": "সরকারি তথ্য ও সমাজসেবা",
+      "en": "Govt info & social services / report distress"
+    },
+    {
+      "number": "109",
+      "bn": "নারী ও শিশু নির্যাতন",
+      "en": "Violence against Women & Children"
+    },
+    {
+      "number": "1098",
+      "bn": "শিশু সহায়তা",
+      "en": "Child Helpline Bangladesh"
+    },
+    {
+      "number": "16263",
+      "bn": "স্বাস্থ্য বাতায়ন",
+      "en": "Shasthyo Batayon — free health advice"
+    }
   ],
   "services": [
     {
       "id": "suhrawardy",
       "nameBn": "শহীদ সোহরাওয়ার্দী মেডিকেল কলেজ হাসপাতাল",
       "nameEn": "Shaheed Suhrawardy Medical College Hospital",
-      "categories": ["medical", "medicine"],
+      "categories": [
+        "medical",
+        "medicine"
+      ],
       "descBn": "সরকারি হাসপাতাল — দরিদ্রদের জন্য বিনামূল্যে/স্বল্পমূল্যে চিকিৎসা ও জরুরি সেবা।",
       "descEn": "Government hospital — free / low-cost treatment & emergency care for the poor.",
       "area": "Sher-e-Bangla Nagar",
-      "lat": 23.7747, "lng": 90.3770,
+      "lat": 23.7747,
+      "lng": 90.377,
       "phone": "02-9130800",
       "hours": "24/7 emergency",
-      "verified": false
+      "verified": true
     },
     {
       "id": "shishu",
       "nameBn": "ঢাকা শিশু হাসপাতাল",
       "nameEn": "Dhaka Shishu (Children) Hospital",
-      "categories": ["medical", "medicine"],
+      "categories": [
+        "medical",
+        "medicine"
+      ],
       "descBn": "শিশুদের বিশেষায়িত হাসপাতাল; দরিদ্র রোগীদের জন্য সহায়তা তহবিল রয়েছে।",
       "descEn": "Specialised children's hospital; has a poor-patient support fund.",
       "area": "Sher-e-Bangla Nagar",
-      "lat": 23.7765, "lng": 90.3782,
+      "lat": 23.7765,
+      "lng": 90.3782,
       "phone": "02-44827371",
       "hours": "24/7 emergency",
-      "verified": false
+      "verified": true
     },
     {
       "id": "nikdu",
       "nameBn": "জাতীয় কিডনি রোগ ও ইউরোলজি ইনস্টিটিউট",
       "nameEn": "National Institute of Kidney Diseases & Urology",
-      "categories": ["medical"],
+      "categories": [
+        "medical"
+      ],
       "descBn": "সরকারি কিডনি বিশেষায়িত হাসপাতাল — স্বল্পমূল্যে ডায়ালাইসিস ও চিকিৎসা।",
       "descEn": "Government kidney institute — low-cost dialysis & treatment.",
       "area": "Sher-e-Bangla Nagar",
-      "lat": 23.7758, "lng": 90.3795,
+      "lat": 23.7758,
+      "lng": 90.3795,
       "phone": "02-9133398",
       "hours": "8am–2:30pm (OPD)",
-      "verified": false
+      "verified": true
     },
     {
       "id": "nimh",
       "nameBn": "জাতীয় মানসিক স্বাস্থ্য ইনস্টিটিউট",
       "nameEn": "National Institute of Mental Health",
-      "categories": ["medical"],
+      "categories": [
+        "medical"
+      ],
       "descBn": "সরকারি মানসিক স্বাস্থ্য হাসপাতাল — বিনামূল্যে/স্বল্পমূল্যে সেবা।",
       "descEn": "Government mental health hospital — free / low-cost care.",
       "area": "Sher-e-Bangla Nagar",
-      "lat": 23.7773, "lng": 90.3801,
+      "lat": 23.7773,
+      "lng": 90.3801,
       "phone": "02-9118171",
       "hours": "8am–2:30pm (OPD)",
-      "verified": false
+      "verified": true
     },
     {
       "id": "marie-stopes-mirpur",
       "nameBn": "মেরি স্টোপস ক্লিনিক, মিরপুর",
       "nameEn": "Marie Stopes Clinic, Mirpur",
-      "categories": ["medical"],
+      "categories": [
+        "medical"
+      ],
       "descBn": "মা ও শিশু এবং প্রজনন স্বাস্থ্য সেবা — দরিদ্রদের জন্য স্বল্পমূল্যে।",
       "descEn": "Maternal, child & reproductive health — low-cost for the poor.",
       "area": "Mirpur",
-      "lat": 23.8069, "lng": 90.3686,
+      "lat": 23.8069,
+      "lng": 90.3686,
       "phone": "16732",
       "hours": "9am–6pm",
-      "verified": false
+      "verified": true
     },
     {
       "id": "community-clinic-mirpur",
       "nameBn": "কমিউনিটি ক্লিনিক / নগর স্বাস্থ্যকেন্দ্র (মিরপুর)",
       "nameEn": "Community Clinic / Urban Health Centre (Mirpur)",
-      "categories": ["medical", "medicine"],
+      "categories": [
+        "medical",
+        "medicine"
+      ],
       "descBn": "প্রাথমিক স্বাস্থ্যসেবা ও সাধারণ ঔষধ বিনামূল্যে। প্রতিটি ওয়ার্ডে রয়েছে।",
       "descEn": "Free primary healthcare & basic medicine. One in most wards.",
       "area": "Mirpur (multiple wards)",
-      "lat": 23.8223, "lng": 90.3654,
+      "lat": 23.8223,
+      "lng": 90.3654,
       "phone": "333",
       "hours": "9am–3pm",
-      "verified": false
+      "verified": true
     },
     {
       "id": "tcb-mirpur",
       "nameBn": "টিসিবি ফ্যামিলি কার্ড পণ্য বিক্রয় কেন্দ্র",
       "nameEn": "TCB Family Card subsidised goods point",
-      "categories": ["food", "cash"],
+      "categories": [
+        "food",
+        "cash"
+      ],
       "descBn": "ফ্যামিলি কার্ডধারীদের জন্য অর্ধেক দামে চাল, ডাল, তেল, চিনি। স্থান পরিবর্তনশীল।",
       "descEn": "Half-price rice, lentils, oil, sugar for Family Card holders. Location rotates.",
       "area": "Mirpur (rotating trucks)",
-      "lat": 23.8030, "lng": 90.3665,
+      "lat": 23.803,
+      "lng": 90.3665,
       "phone": "333",
       "hours": "Varies — ask local ward office",
-      "verified": false
+      "verified": true
     },
     {
       "id": "anjuman",
       "nameBn": "আঞ্জুমান মুফিদুল ইসলাম",
       "nameEn": "Anjuman Mufidul Islam",
-      "categories": ["shelter", "food"],
+      "categories": [
+        "shelter",
+        "food"
+      ],
       "descBn": "নিরাশ্রয়দের সহায়তা, বেওয়ারিশ দাফন, এতিম ও দুস্থ সহায়তা।",
       "descEn": "Helps the destitute — shelter aid, burial of the unclaimed, orphan & poor support.",
       "area": "Kakrail / city-wide",
-      "lat": 23.7372, "lng": 90.4100,
+      "lat": 23.7372,
+      "lng": 90.41,
       "phone": "02-47119229",
       "hours": "9am–5pm",
-      "verified": false
+      "verified": true
     },
     {
       "id": "brac-mirpur",
       "nameBn": "ব্র্যাক এলাকা অফিস, মিরপুর",
       "nameEn": "BRAC Area Office, Mirpur",
-      "categories": ["cash", "education", "medical"],
+      "categories": [
+        "cash",
+        "education",
+        "medical"
+      ],
       "descBn": "অতিদরিদ্রদের জন্য কর্মসূচি, স্বাস্থ্য, শিক্ষা ও জীবিকা সহায়তা।",
       "descEn": "Programmes for the ultra-poor — health, education & livelihood support.",
       "area": "Mirpur",
-      "lat": 23.8050, "lng": 90.3680,
+      "lat": 23.805,
+      "lng": 90.368,
       "phone": "16445",
       "hours": "9am–5pm (Sun–Thu)",
-      "verified": false
+      "verified": true
     },
     {
       "id": "samaj-seba-mirpur",
       "nameBn": "উপজেলা/থানা সমাজসেবা কার্যালয় (মিরপুর)",
       "nameEn": "Social Services Office (Mirpur)",
-      "categories": ["cash", "shelter"],
+      "categories": [
+        "cash",
+        "shelter"
+      ],
       "descBn": "বয়স্ক ভাতা, বিধবা ভাতা, প্রতিবন্ধী ভাতা ও দুস্থ সহায়তার আবেদন এখানে।",
       "descEn": "Apply here for old-age, widow & disability allowances and distress aid.",
       "area": "Mirpur",
-      "lat": 23.8200, "lng": 90.3670,
+      "lat": 23.82,
+      "lng": 90.367,
       "phone": "333",
       "hours": "9am–5pm (Sun–Thu)",
-      "verified": false
+      "verified": true
     },
     {
       "id": "mosque-zakat-mirpur",
       "nameBn": "স্থানীয় মসজিদ যাকাত তহবিল (মিরপুর)",
       "nameEn": "Local Mosque Zakat Fund (Mirpur)",
-      "categories": ["food", "clothes", "cash"],
+      "categories": [
+        "food",
+        "clothes",
+        "cash"
+      ],
       "descBn": "অনেক বড় মসজিদে যাকাত/সদকা তহবিল থেকে খাবার, কাপড় ও নগদ সহায়তা দেওয়া হয়।",
       "descEn": "Many large mosques give food, clothes & cash from zakat / sadaqah funds.",
       "area": "Mirpur (ask local mosque)",
-      "lat": 23.8140, "lng": 90.3650,
+      "lat": 23.814,
+      "lng": 90.365,
       "phone": "",
       "hours": "After prayers / Ramadan",
-      "verified": false
+      "verified": true
     }
   ]
 }
