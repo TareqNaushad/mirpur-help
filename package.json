@@ -1,0 +1,20 @@
+{
+  "name": "mirpur-help",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mirpur Help Map - find free & low-cost services (food, medical, shelter) near you in Mirpur, Dhaka",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "checklist": "node scripts/make-checklist.js"
+  },
+  "dependencies": {
+    "leaflet": "1.9.4",
+    "next": "^14.2.35",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-leaflet": "4.2.1"
+  }
+}

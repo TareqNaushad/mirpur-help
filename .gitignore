@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+.env
+.env.local
+*.log
+.DS_Store
+
+# Local dev moderation queue (recreated by the API; use Supabase in production)
+data/pending-events.json
