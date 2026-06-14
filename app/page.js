@@ -3,12 +3,14 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CATEGORIES,
   HELPLINES,
   servicesByCategory,
 } from "../data/services";
 import { upcomingEvents } from "../data/events";
+import VoiceAssistant from "../components/VoiceAssistant";
 
 // Leaflet must not render on the server.
 const MapView = dynamic(() => import("../components/MapView"), {
@@ -35,14 +37,44 @@ function directionsUrl(s) {
 export default function Home() {
   const [cat, setCat] = useState(null); // selected category object
   const [view, setView] = useState("list"); // "list" | "map"
+  const router = useRouter();
 
   const services = useMemo(
     () => (cat ? servicesByCategory(cat.id) : []),
     [cat]
   );
 
+  // Handle a command coming from the voice assistant.
+  function handleVoice(action) {
+    if (!action) return;
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    switch (action.type) {
+      case "category": {
+        const found = CATEGORIES.find((c) => c.id === action.value);
+        if (found) {
+          setCat(found);
+          setView("list");
+        }
+        break;
+      }
+      case "route":
+        router.push(action.value);
+        break;
+      case "events":
+      case "emergency":
+        setCat(null); // back to home where events & helplines are visible
+        break;
+      default:
+        break;
+    }
+  }
+
   return (
     <main className="app">
+      <VoiceAssistant
+        onCommand={handleVoice}
+        categoryServices={(id) => servicesByCategory(id)}
+      />
       <header className="header">
         <h1>🤝 মিরপুর সাহায্য</h1>
         <p>
@@ -51,6 +83,9 @@ export default function Home() {
           <span style={{ opacity: 0.85, fontSize: 12 }}>
             Find free help near you — Mirpur, Dhaka
           </span>
+        </p>
+        <p className="voice-hint">
+          🎤 পড়তে না পারলে নিচের সবুজ বোতামে চাপ দিয়ে বাংলায় কথা বলুন
         </p>
       </header>
 

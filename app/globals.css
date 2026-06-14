@@ -31,7 +31,7 @@ body {
   min-height: 100vh;
   background: var(--bg);
   position: relative;
-  padding-bottom: 24px;
+  padding-bottom: 90px; /* room for floating voice button */
 }
 
 /* ---------- Header ---------- */
@@ -160,6 +160,124 @@ body {
   border: 1px dashed #9ccbab;
   border-radius: 12px;
   text-decoration: none;
+}
+
+/* ---------- Voice assistant ---------- */
+.voice-hint {
+  margin: 8px 0 0 !important;
+  font-size: 12.5px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+.voice-fab {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #1d8a4e, #156b3c);
+  color: #fff;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+}
+.voice-fab:active {
+  transform: translateX(-50%) scale(0.96);
+}
+.voice-fab-ic {
+  font-size: 22px;
+  line-height: 1;
+}
+.voice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.voice-card {
+  background: var(--card);
+  width: 100%;
+  max-width: 520px;
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  padding: 22px 18px 28px;
+  text-align: center;
+  position: relative;
+  animation: voice-up 0.2s ease;
+}
+@keyframes voice-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.voice-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: 0;
+  background: var(--bg);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.voice-mic {
+  font-size: 56px;
+  line-height: 1;
+  margin: 6px 0 10px;
+}
+.voice-mic.pulse {
+  animation: voice-pulse 1s infinite;
+}
+@keyframes voice-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.18); opacity: 0.7; }
+}
+.voice-status {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 4px 0;
+}
+.voice-heard {
+  font-size: 18px;
+  color: var(--brand-dark);
+  background: #eaf4ec;
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+.voice-reply {
+  font-size: 15px;
+  color: var(--ink);
+  margin: 8px 0;
+  line-height: 1.5;
+}
+.voice-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.voice-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 14px;
+}
+.voice-menu .chip {
+  font-size: 15px;
+  padding: 10px 14px;
 }
 
 /* ---------- Need / Give help pair ---------- */
