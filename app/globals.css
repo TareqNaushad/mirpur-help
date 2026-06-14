@@ -162,6 +162,74 @@ body {
   text-decoration: none;
 }
 
+/* ---------- Need / Give help pair ---------- */
+.help-pair {
+  display: flex;
+  gap: 12px;
+  margin: 10px 14px 2px;
+}
+.help-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 14px 8px;
+  border-radius: 16px;
+  text-decoration: none;
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+.help-btn:active {
+  transform: scale(0.97);
+}
+.help-btn.need {
+  background: linear-gradient(135deg, #1d8a4e, #156b3c);
+}
+.help-btn.give {
+  background: linear-gradient(135deg, #c1121f, #9d0208);
+}
+.help-btn .hb-ic {
+  font-size: 28px;
+  line-height: 1;
+}
+.help-btn strong {
+  font-size: 16px;
+  margin-top: 4px;
+}
+.help-btn small {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+/* ---------- Filter chips (needs feed) ---------- */
+.filter-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 14px 4px;
+  scrollbar-width: none;
+}
+.filter-row::-webkit-scrollbar {
+  display: none;
+}
+.chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+}
+.chip.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
 /* ---------- Eligibility wizard CTA ---------- */
 .wizard-cta {
   display: flex;

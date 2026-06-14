@@ -8,3 +8,5 @@ out
 
 # Local dev moderation queue (recreated by the API; use Supabase in production)
 data/pending-events.json
+# Local dev needs store (seed needs live in data/needs.json; use Supabase in prod)
+data/needs-local.json

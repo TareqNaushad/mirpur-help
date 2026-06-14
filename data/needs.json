@@ -1,0 +1,57 @@
+{
+  "categories": [
+    { "id": "food",     "bn": "খাবার",      "en": "Food",     "icon": "🍚" },
+    { "id": "medicine", "bn": "ঔষধ/চিকিৎসা", "en": "Medicine", "icon": "💊" },
+    { "id": "money",    "bn": "নগদ অর্থ",    "en": "Cash",     "icon": "💰" },
+    { "id": "clothes",  "bn": "কাপড়",       "en": "Clothes",  "icon": "👕" },
+    { "id": "shelter",  "bn": "আশ্রয়",      "en": "Shelter",  "icon": "🏠" },
+    { "id": "other",    "bn": "অন্যান্য",    "en": "Other",    "icon": "🤲" }
+  ],
+  "needs": [
+    {
+      "id": "seed-need-1",
+      "categoryId": "medicine",
+      "categoryBn": "ঔষধ/চিকিৎসা",
+      "icon": "💊",
+      "titleBn": "অসুস্থ শিশুর জন্য ঔষধ দরকার",
+      "descBn": "৬ মাসের শিশুর জ্বর ও নিউমোনিয়া। মা অসহায়, ঔষধ কেনার টাকা নেই।",
+      "area": "মিরপুর ১১, বাউনিয়াবাঁধ",
+      "contactName": "রহিমা",
+      "contactPhone": "01700000000",
+      "urgency": "urgent",
+      "status": "open",
+      "createdAt": "2026-06-14T08:00:00.000Z",
+      "verified": false
+    },
+    {
+      "id": "seed-need-2",
+      "categoryId": "food",
+      "categoryBn": "খাবার",
+      "icon": "🍚",
+      "titleBn": "তিন দিন ধরে খাবার নেই",
+      "descBn": "বৃদ্ধ দম্পতি, কেউ দেখার নেই। কয়েক দিনের খাবার সহায়তা দরকার।",
+      "area": "মিরপুর ১, ঝিলপাড় বস্তি",
+      "contactName": "আব্দুল করিম",
+      "contactPhone": "01800000000",
+      "urgency": "urgent",
+      "status": "open",
+      "createdAt": "2026-06-14T06:30:00.000Z",
+      "verified": false
+    },
+    {
+      "id": "seed-need-3",
+      "categoryId": "clothes",
+      "categoryBn": "কাপড়",
+      "icon": "👕",
+      "titleBn": "শীতের কাপড় ও কম্বল দরকার",
+      "descBn": "পথশিশুদের জন্য পুরোনো কাপড় ও কম্বল প্রয়োজন।",
+      "area": "মিরপুর ১০ গোলচত্বর",
+      "contactName": "স্বেচ্ছাসেবক দল",
+      "contactPhone": "01900000000",
+      "urgency": "normal",
+      "status": "open",
+      "createdAt": "2026-06-13T15:00:00.000Z",
+      "verified": false
+    }
+  ]
+}

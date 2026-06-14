@@ -75,6 +75,19 @@ export default function Home() {
             <span className="wizard-go">→</span>
           </Link>
 
+          <div className="help-pair">
+            <Link href="/post-need" className="help-btn need">
+              <span className="hb-ic">🙏</span>
+              <strong>সাহায্য চাই</strong>
+              <small>Ask for help</small>
+            </Link>
+            <Link href="/needs" className="help-btn give">
+              <span className="hb-ic">❤️</span>
+              <strong>সাহায্য করুন</strong>
+              <small>Help someone</small>
+            </Link>
+          </div>
+
           {upcomingEvents().length > 0 && (
             <>
               <div className="section-title">
