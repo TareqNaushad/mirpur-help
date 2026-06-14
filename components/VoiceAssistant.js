@@ -209,19 +209,21 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
   }
 
   // Build the spoken reply for an intent, then run the action.
-  function runIntent(intent, recognizedText) {
+  // replyOverride (from the LLM) is used as the spoken text when present.
+  function runIntent(intent, recognizedText, replyOverride) {
     setHeard(recognizedText || "");
     setStatus("result");
 
     if (!intent) {
-      const msg = "আমি ঠিক বুঝতে পারিনি। আবার বলুন, অথবা নিচ থেকে বেছে নিন।";
+      const msg =
+        replyOverride || "আমি ঠিক বুঝতে পারিনি। আবার বলুন, অথবা নিচ থেকে বেছে নিন।";
       setReply(msg);
       setShowMenu(true);
       speak(msg);
       return;
     }
 
-    let msg = intent.speakBn;
+    let msg = replyOverride || intent.speakBn;
     if (intent.action.type === "category" && categoryServices) {
       const list = categoryServices(intent.action.value) || [];
       const names = list.slice(0, 3).map((s) => s.nameBn);
@@ -235,8 +237,40 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
     });
   }
 
-  function handleResult(alts) {
-    runIntent(matchIntent(alts), alts[0] || "");
+  // First try the LLM (free-form Bangla understanding); fall back to offline
+  // keyword matching if there's no key / it's slow / it errors.
+  async function handleResult(alts) {
+    const text = alts[0] || "";
+    setHeard(text);
+    setStatus("thinking");
+
+    let intent = null;
+    let replyOverride = null;
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 6000);
+      const r = await fetch("/api/voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(t);
+      const d = await r.json();
+      if (d.ok) {
+        if (d.intentId && d.intentId !== "unknown") {
+          intent = VOICE_INTENTS.find((i) => i.id === d.intentId) || null;
+        }
+        replyOverride = d.replyBn || null;
+      }
+    } catch {
+      /* network / timeout / no-key → fall back below */
+    }
+
+    // Fallback: offline keyword matching.
+    if (!intent && !replyOverride) intent = matchIntent(alts);
+
+    runIntent(intent, text, replyOverride);
   }
 
   function chooseMenu(id) {
@@ -279,11 +313,17 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
               </p>
             ) : (
               <>
-                <div className={`voice-mic ${status === "listening" ? "pulse" : ""}`}>
+                <div
+                  className={`voice-mic ${
+                    status === "listening" || status === "thinking" ? "pulse" : ""
+                  }`}
+                >
                   {status === "listening"
                     ? "🎙️"
                     : status === "speaking"
                     ? "🔊"
+                    : status === "thinking"
+                    ? "🤔"
                     : status === "denied"
                     ? "🚫"
                     : "🎤"}
@@ -291,6 +331,7 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
                 <p className="voice-status">
                   {status === "speaking" && "শুনুন…"}
                   {status === "listening" && "এখন বলুন… 🎙️"}
+                  {status === "thinking" && "বুঝছি…"}
                   {status === "result" && "আপনি বলেছেন:"}
                   {status === "error" && "আবার চেষ্টা করুন বা নিচ থেকে বেছে নিন।"}
                   {status === "denied" && "মাইক্রোফোন অনুমতি দিন"}
