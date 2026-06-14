@@ -43,7 +43,14 @@ export async function POST(req) {
   }
   if (!text.trim()) return NextResponse.json({ ok: false, reason: "empty" });
 
-  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  // Try current model names in order (resilient to Google retiring models).
+  const models = [
+    process.env.GEMINI_MODEL,
+    "gemini-2.5-flash",
+    "gemini-flash-latest",
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash-001",
+  ].filter(Boolean);
   const prompt =
     `You help poor and vulnerable people in Mirpur, Dhaka find free help. ` +
     `The user spoke in Bangla; here is what they said: "${text}".\n\n` +
@@ -54,24 +61,40 @@ export async function POST(req) {
     `Reply ONLY as JSON: {"intentId": "...", "replyBn": "..."}.`;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${KEY}`;
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.2,
-          maxOutputTokens: 200,
-        },
-      }),
+    const body = JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.2,
+        maxOutputTokens: 200,
+      },
     });
-    if (!r.ok) {
-      const detail = await r.text();
-      return NextResponse.json({ ok: false, reason: "llm-error", detail }, { status: 502 });
+
+    let data = null;
+    let lastDetail = "";
+    let usedModel = "";
+    for (const m of models) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${KEY}`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      if (r.ok) {
+        data = await r.json();
+        usedModel = m;
+        break;
+      }
+      lastDetail = await r.text();
+      // 404 = model name gone, try the next candidate; other errors: stop early.
+      if (r.status !== 404) break;
     }
-    const data = await r.json();
+    if (!data) {
+      return NextResponse.json(
+        { ok: false, reason: "llm-error", detail: lastDetail },
+        { status: 502 }
+      );
+    }
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     let parsed;
     try {
@@ -86,7 +109,7 @@ export async function POST(req) {
     ];
     const intentId = VALID.includes(parsed.intentId) ? parsed.intentId : "unknown";
     const replyBn = String(parsed.replyBn || "").slice(0, 300);
-    return NextResponse.json({ ok: true, intentId, replyBn });
+    return NextResponse.json({ ok: true, intentId, replyBn, model: usedModel });
   } catch (e) {
     return NextResponse.json({ ok: false, reason: "exception", detail: String(e) }, { status: 502 });
   }
