@@ -16,9 +16,17 @@ function speak(text, onend) {
   u.rate = 0.95;
   const bn = sy.getVoices().find((v) => v.lang && v.lang.toLowerCase().startsWith("bn"));
   if (bn) u.voice = bn;
-  u.onend = () => onend && onend();
-  u.onerror = () => onend && onend();
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    onend && onend();
+  };
+  u.onend = finish;
+  u.onerror = finish;
   sy.speak(u);
+  // Safety: if the device never fires onend (some Android builds), continue anyway.
+  setTimeout(finish, Math.min(6000, 1500 + text.length * 60));
 }
 
 const PROMPT =
@@ -27,11 +35,13 @@ const PROMPT =
 export default function VoiceAssistant({ onCommand, categoryServices }) {
   const [open, setOpen] = useState(false);
   const [supported, setSupported] = useState(true);
-  const [status, setStatus] = useState("idle"); // idle|speaking|listening|result|error
+  const [status, setStatus] = useState("idle"); // idle|speaking|listening|result|error|denied
   const [heard, setHeard] = useState("");
   const [reply, setReply] = useState("");
   const [showMenu, setShowMenu] = useState(false);
   const recRef = useRef(null);
+  const gotResultRef = useRef(false);
+  const listeningRef = useRef(false);
 
   // Set up SpeechRecognition once.
   useEffect(() => {
@@ -44,18 +54,48 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
     const rec = new SR();
     rec.lang = "bn-BD";
     rec.interimResults = false;
+    rec.continuous = false;
     rec.maxAlternatives = 3;
+
+    rec.onstart = () => {
+      listeningRef.current = true;
+      setStatus("listening");
+    };
     rec.onresult = (e) => {
+      gotResultRef.current = true;
       const alts = Array.from(e.results[0]).map((r) => r.transcript);
       handleResult(alts);
     };
-    rec.onerror = () => {
-      setStatus("error");
+    rec.onerror = (e) => {
+      listeningRef.current = false;
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        setStatus("denied");
+      } else if (e.error === "no-speech") {
+        setStatus("error");
+        const m = "কিছু শুনতে পাইনি। আবার বলুন, অথবা নিচ থেকে বেছে নিন।";
+        setReply(m);
+        speak(m);
+      } else {
+        setStatus("error");
+      }
       setShowMenu(true);
     };
+    rec.onend = () => {
+      listeningRef.current = false;
+      // Ended without any result -> let the user retry / use the menu.
+      if (!gotResultRef.current) {
+        setStatus((s) => (s === "denied" ? s : "error"));
+        setShowMenu(true);
+      }
+    };
+
     recRef.current = rec;
-    // Warm up the voice list.
-    if (window.speechSynthesis) window.speechSynthesis.getVoices();
+    // Warm up the voice list (Android loads voices async).
+    const warm = () => window.speechSynthesis && window.speechSynthesis.getVoices();
+    warm();
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = warm;
+    }
     return () => {
       try {
         rec.abort();
@@ -66,21 +106,41 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
 
   function startListening() {
     if (!recRef.current) return;
-    setStatus("listening");
+    gotResultRef.current = false;
     setHeard("");
+    setStatus("listening");
     try {
       recRef.current.start();
     } catch {
-      /* already started */
+      // Already running — restart cleanly.
+      try {
+        recRef.current.stop();
+        setTimeout(() => recRef.current.start(), 250);
+      } catch {}
     }
   }
 
-  function begin() {
+  async function begin() {
     setOpen(true);
     setReply("");
     setHeard("");
     setShowMenu(false);
     setStatus("speaking");
+
+    // Explicitly request microphone permission first (Android Chrome).
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // We only needed the permission; release the mic for SpeechRecognition.
+        stream.getTracks().forEach((t) => t.stop());
+      }
+    } catch {
+      setStatus("denied");
+      setShowMenu(true);
+      return;
+    }
+
+    // Speak the prompt, then start listening.
     speak(PROMPT, () => startListening());
   }
 
@@ -105,7 +165,6 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
     }
     setReply(msg);
     setShowMenu(false);
-    // Speak the answer, THEN navigate (so they hear it before the screen changes).
     speak(msg, () => {
       onCommand && onCommand(intent.action);
       if (intent.action.type !== "route") setOpen(false);
@@ -113,11 +172,9 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
   }
 
   function handleResult(alts) {
-    const intent = matchIntent(alts);
-    runIntent(intent, alts[0] || "");
+    runIntent(matchIntent(alts), alts[0] || "");
   }
 
-  // Tapping a fallback chip = same as saying it.
   function chooseMenu(id) {
     const intent = VOICE_INTENTS.find((i) => i.id === id);
     if (intent) runIntent(intent, intent.id);
@@ -133,11 +190,12 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
       window.speechSynthesis.cancel();
   }
 
-  const menuChips = VOICE_MENU.map((id) => VOICE_INTENTS.find((i) => i.id === id)).filter(Boolean);
+  const menuChips = VOICE_MENU.map((id) =>
+    VOICE_INTENTS.find((i) => i.id === id)
+  ).filter(Boolean);
 
   return (
     <>
-      {/* Floating mic button — always reachable */}
       <button className="voice-fab" onClick={begin} aria-label="কথা বলে সাহায্য নিন">
         <span className="voice-fab-ic">🎤</span>
         <span className="voice-fab-txt">কথা বলুন</span>
@@ -158,32 +216,47 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
             ) : (
               <>
                 <div className={`voice-mic ${status === "listening" ? "pulse" : ""}`}>
-                  {status === "listening" ? "🎙️" : status === "speaking" ? "🔊" : "🎤"}
+                  {status === "listening"
+                    ? "🎙️"
+                    : status === "speaking"
+                    ? "🔊"
+                    : status === "denied"
+                    ? "🚫"
+                    : "🎤"}
                 </div>
                 <p className="voice-status">
                   {status === "speaking" && "শুনুন…"}
                   {status === "listening" && "এখন বলুন… 🎙️"}
                   {status === "result" && "আপনি বলেছেন:"}
-                  {status === "error" && "শোনা যায়নি। আবার চেষ্টা করুন বা বেছে নিন।"}
+                  {status === "error" && "আবার চেষ্টা করুন বা নিচ থেকে বেছে নিন।"}
+                  {status === "denied" && "মাইক্রোফোন অনুমতি দিন"}
                   {status === "idle" && "প্রস্তুত"}
                 </p>
+
+                {status === "denied" && (
+                  <p className="voice-reply">
+                    ভয়েস ব্যবহার করতে মাইক্রোফোনের অনুমতি দরকার। উপরে ঠিকানা বারের
+                    🔒/⚙️ আইকনে চাপ দিয়ে <strong>Microphone → Allow</strong> করুন।
+                    নয়তো নিচ থেকে বেছে নিন।
+                  </p>
+                )}
                 {heard && <p className="voice-heard">“{heard}”</p>}
-                {reply && <p className="voice-reply">🔊 {reply}</p>}
+                {reply && status !== "denied" && <p className="voice-reply">🔊 {reply}</p>}
               </>
             )}
 
             <div className="voice-actions">
-              {supported && (
+              {supported && status !== "denied" && (
                 <button className="btn call" onClick={begin}>
                   🎤 আবার বলুন
                 </button>
               )}
-              <button className="btn" onClick={() => setShowMenu((s) => !s)}>
+              <button className="btn" onClick={() => setShowMenu(true)}>
                 📋 অপশন দেখুন
               </button>
             </div>
 
-            {(showMenu || !supported) && (
+            {(showMenu || !supported || status === "denied") && (
               <div className="voice-menu">
                 {menuChips.map((i) => (
                   <button key={i.id} className="chip" onClick={() => chooseMenu(i.id)}>
