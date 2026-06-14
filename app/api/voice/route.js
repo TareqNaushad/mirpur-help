@@ -67,7 +67,11 @@ export async function POST(req) {
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.2,
-        maxOutputTokens: 512,
+        maxOutputTokens: 1024,
+        // Gemini 2.5 models "think" by default, consuming the token budget
+        // before emitting output (which truncated our JSON). Disable it — this
+        // is a simple, fast classification task.
+        thinkingConfig: { thinkingBudget: 0 },
       },
     });
 
