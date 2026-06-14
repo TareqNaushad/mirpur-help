@@ -96,7 +96,12 @@ export async function POST(req) {
         { status: 502 }
       );
     }
-    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    // Gemini may split the reply across several parts — join them all,
+    // otherwise the JSON can come back truncated/unterminated.
+    const raw =
+      (data?.candidates?.[0]?.content?.parts || [])
+        .map((p) => p?.text || "")
+        .join("") || "{}";
     // Robustly extract the JSON object even if the model wraps it in prose or
     // code fences (e.g. "Here is the JSON: { ... }").
     let parsed;
