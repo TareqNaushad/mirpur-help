@@ -96,12 +96,17 @@ export async function POST(req) {
       );
     }
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    // Robustly extract the JSON object even if the model wraps it in prose or
+    // code fences (e.g. "Here is the JSON: { ... }").
     let parsed;
     try {
       parsed = JSON.parse(raw);
     } catch {
-      // Strip any stray fences just in case.
-      parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
+      let s = raw.replace(/```json|```/gi, "").trim();
+      const a = s.indexOf("{");
+      const b = s.lastIndexOf("}");
+      if (a !== -1 && b !== -1 && b > a) s = s.slice(a, b + 1);
+      parsed = JSON.parse(s);
     }
     const VALID = [
       "food", "medical", "medicine", "shelter", "clothes", "cash",
