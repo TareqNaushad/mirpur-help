@@ -58,7 +58,8 @@ export async function POST(req) {
     `Then write "replyBn": a SHORT (max 25 words), warm, simple Bangla sentence ` +
     `telling them what you are showing or doing (e.g. "খাবারের জন্য কাছের জায়গাগুলো দেখাচ্ছি।"). ` +
     `If intent is unknown, gently ask in Bangla what they need. ` +
-    `Reply ONLY as JSON: {"intentId": "...", "replyBn": "..."}.`;
+    `Output ONLY the raw JSON object, with no preamble, no explanation and no ` +
+    `code fences: {"intentId": "...", "replyBn": "..."}`;
 
   try {
     const body = JSON.stringify({
@@ -66,7 +67,7 @@ export async function POST(req) {
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.2,
-        maxOutputTokens: 200,
+        maxOutputTokens: 512,
       },
     });
 
