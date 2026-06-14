@@ -3,8 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { VOICE_INTENTS, matchIntent, VOICE_MENU } from "../data/voiceIntents";
 
-// Bangla text-to-speech. Picks a Bangla voice if the device has one.
-function speak(text, onend) {
+// Split long Bangla text into <=180-char chunks (Google TTS limit), at
+// sentence/space boundaries.
+function chunkText(text) {
+  const parts = [];
+  let s = String(text).trim();
+  while (s.length > 180) {
+    let i = s.lastIndexOf("।", 180);
+    if (i < 60) i = s.lastIndexOf(" ", 180);
+    if (i < 60) i = 180;
+    parts.push(s.slice(0, i));
+    s = s.slice(i);
+  }
+  if (s.trim()) parts.push(s.trim());
+  return parts;
+}
+
+// Device text-to-speech (needs a Bangla voice installed on the device).
+function deviceSpeak(text, onend) {
   if (typeof window === "undefined" || !window.speechSynthesis) {
     onend && onend();
     return;
@@ -25,8 +41,56 @@ function speak(text, onend) {
   u.onend = finish;
   u.onerror = finish;
   sy.speak(u);
-  // Safety: if the device never fires onend (some Android builds), continue anyway.
-  setTimeout(finish, Math.min(6000, 1500 + text.length * 60));
+  setTimeout(finish, Math.min(7000, 1500 + text.length * 60));
+}
+
+// Bangla text-to-speech. Tries Google's FREE TTS audio first (works on ANY
+// device without installing a Bangla voice), and falls back to the device
+// voice if that's unavailable. Always calls onend so navigation never stalls.
+function speak(text, onend) {
+  if (typeof window === "undefined") {
+    onend && onend();
+    return;
+  }
+  const parts = chunkText(text);
+  let idx = 0;
+  let usedFallback = false;
+
+  const playNext = () => {
+    if (idx >= parts.length) {
+      onend && onend();
+      return;
+    }
+    const url =
+      "https://translate.google.com/translate_tts?ie=UTF-8&tl=bn&client=tw-ob&q=" +
+      encodeURIComponent(parts[idx]);
+    const audio = new Audio(url);
+    let advanced = false;
+    const next = () => {
+      if (advanced) return;
+      advanced = true;
+      idx += 1;
+      playNext();
+    };
+    audio.onended = next;
+    audio.onerror = () => {
+      // Google TTS unavailable -> speak the rest with the device voice.
+      if (advanced) return;
+      advanced = true;
+      usedFallback = true;
+      deviceSpeak(parts.slice(idx).join(" "), onend);
+    };
+    const p = audio.play();
+    if (p && p.catch) {
+      p.catch(() => {
+        if (advanced || usedFallback) return;
+        advanced = true;
+        deviceSpeak(parts.slice(idx).join(" "), onend);
+      });
+    }
+  };
+
+  playNext();
 }
 
 const PROMPT =
