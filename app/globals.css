@@ -279,6 +279,19 @@ body {
   font-size: 15px;
   padding: 10px 14px;
 }
+.voice-replay {
+  display: inline-block;
+  margin-left: 6px;
+  border: 1px solid var(--brand);
+  background: #eaf4ec;
+  color: var(--brand-dark);
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
 
 /* ---------- Need / Give help pair ---------- */
 .help-pair {

@@ -184,28 +184,38 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
     }
   }
 
-  async function begin() {
+  function begin() {
     setOpen(true);
     setReply("");
     setHeard("");
     setShowMenu(false);
     setStatus("speaking");
 
-    // Explicitly request microphone permission first (Android Chrome).
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // We only needed the permission; release the mic for SpeechRecognition.
-        stream.getTracks().forEach((t) => t.stop());
-      }
-    } catch {
-      setStatus("denied");
-      setShowMenu(true);
-      return;
-    }
+    // Request mic permission WITHOUT awaiting before we speak — awaiting here
+    // would break the user-gesture context and browsers would then block all
+    // audio. So: kick off permission as a promise, speak the prompt right now
+    // (inside the tap), and only listen once permission resolves.
+    const micPromise =
+      navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+        ? navigator.mediaDevices
+            .getUserMedia({ audio: true })
+            .then((s) => {
+              s.getTracks().forEach((t) => t.stop());
+              return true;
+            })
+            .catch(() => false)
+        : Promise.resolve(true);
 
-    // Speak the prompt, then start listening.
-    speak(PROMPT, () => startListening());
+    // Speak the prompt immediately within the tap gesture (unlocks audio).
+    speak(PROMPT, async () => {
+      const okMic = await micPromise;
+      if (okMic === false) {
+        setStatus("denied");
+        setShowMenu(true);
+        return;
+      }
+      startListening();
+    });
   }
 
   // Build the spoken reply for an intent, then run the action.
@@ -346,7 +356,18 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
                   </p>
                 )}
                 {heard && <p className="voice-heard">“{heard}”</p>}
-                {reply && status !== "denied" && <p className="voice-reply">🔊 {reply}</p>}
+                {reply && status !== "denied" && (
+                  <p className="voice-reply">
+                    🔊 {reply}{" "}
+                    <button
+                      className="voice-replay"
+                      onClick={() => speak(reply)}
+                      aria-label="আবার শুনুন"
+                    >
+                      🔊 শুনুন
+                    </button>
+                  </p>
+                )}
               </>
             )}
 
