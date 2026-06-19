@@ -1,7 +1,7 @@
 // Phone line SPEECH HANDLER — Twilio posts the caller's recognised speech here
 // (SpeechResult). We run it through the same Gemini brain as the web app, then
 // speak the Bangla answer back and listen again (so the call is a conversation).
-import { baseUrl, twiml, gatherSpeech, playBangla } from "../../../../lib/twiml";
+import { baseUrl, twiml, gatherSpeech, playBangla, SPEECH_HINTS } from "../../../../lib/twiml";
 import { understand } from "../../../../lib/understand";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +38,8 @@ export async function POST(req) {
 
   // Speak the answer, then listen again for the next question.
   const inner =
-    `<Gather input="speech" language="bn-IN" speechTimeout="auto" ` +
+    `<Gather input="speech" language="bn-IN" speechTimeout="3" ` +
+    `hints="${SPEECH_HINTS}" ` +
     `action="${base}/api/ivr/handle" method="POST">` +
     playBangla(replyBn, base) +
     playBangla(FOLLOW_UP, base) +
