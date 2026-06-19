@@ -17,13 +17,15 @@ async function fetchRecordingBase64(url) {
   const tok = process.env.TWILIO_AUTH_TOKEN;
   if (!sid || !tok || !url) return null;
   const auth = "Basic " + Buffer.from(`${sid}:${tok}`).toString("base64");
+  // Fetch as WAV (lossless PCM) — phone audio is only 8kHz, so avoid MP3
+  // compression on top of it; Gemini transcribes the clean signal better.
   // The recording may take a moment to become available — retry briefly.
   for (let i = 0; i < 5; i++) {
     try {
-      const res = await fetch(url + ".mp3", { headers: { Authorization: auth } });
+      const res = await fetch(url + ".wav", { headers: { Authorization: auth } });
       if (res.ok) {
         const buf = await res.arrayBuffer();
-        if (buf.byteLength > 800) return Buffer.from(buf).toString("base64");
+        if (buf.byteLength > 1200) return Buffer.from(buf).toString("base64");
       }
     } catch {
       /* retry */
@@ -36,8 +38,8 @@ async function fetchRecordingBase64(url) {
 function recordPrompt(text, base) {
   return (
     playBangla(text, base) +
-    `<Record action="${base}/api/ivr/handle" method="POST" maxLength="8" ` +
-    `timeout="2" playBeep="true" trim="trim-silence" finishOnKey="#" />`
+    `<Record action="${base}/api/ivr/handle" method="POST" maxLength="9" ` +
+    `timeout="3" playBeep="true" trim="trim-silence" finishOnKey="#" />`
   );
 }
 
@@ -66,7 +68,7 @@ export async function POST(req) {
     "দুঃখিত, এই মুহূর্তে আপনার কথা বুঝতে পারছি না। জরুরি প্রয়োজনে ৩৩৩ অথবা ৯৯৯ নম্বরে কল করুন।";
   if (audioBase64) {
     try {
-      const r = await understand({ audioBase64, mimeType: "audio/mpeg" });
+      const r = await understand({ audioBase64, mimeType: "audio/wav" });
       if (r.ok && r.replyBn) replyBn = r.replyBn;
     } catch {
       /* keep fallback */

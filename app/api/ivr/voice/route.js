@@ -15,8 +15,8 @@ function handle(req) {
   const base = baseUrl(req);
   const inner =
     playBangla(WELCOME, base) +
-    `<Record action="${base}/api/ivr/handle" method="POST" maxLength="8" ` +
-    `timeout="2" playBeep="true" trim="trim-silence" finishOnKey="#" />` +
+    `<Record action="${base}/api/ivr/handle" method="POST" maxLength="9" ` +
+    `timeout="3" playBeep="true" trim="trim-silence" finishOnKey="#" />` +
     playBangla("কিছু শুনতে পাইনি। অনুগ্রহ করে আবার কল করুন। ধন্যবাদ।", base);
   return twiml(inner);
 }
