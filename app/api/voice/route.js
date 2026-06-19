@@ -35,13 +35,18 @@ export async function POST(req) {
     return NextResponse.json({ ok: false, reason: "no-key" });
   }
 
-  let text = "";
+  let input;
   try {
-    text = String((await req.json()).text || "").slice(0, 400);
+    input = await req.json();
   } catch {
     return NextResponse.json({ ok: false, reason: "bad-input" }, { status: 400 });
   }
-  if (!text.trim()) return NextResponse.json({ ok: false, reason: "empty" });
+  const text = String(input.text || "").slice(0, 400);
+  const audioBase64 = typeof input.audioBase64 === "string" ? input.audioBase64 : "";
+  const audioMime = String(input.mimeType || "audio/webm").split(";")[0];
+  if (!text.trim() && !audioBase64) {
+    return NextResponse.json({ ok: false, reason: "empty" });
+  }
 
   // Try current model names in order (resilient to Google retiring models).
   const models = [
@@ -51,19 +56,33 @@ export async function POST(req) {
     "gemini-2.5-flash-lite",
     "gemini-2.0-flash-001",
   ].filter(Boolean);
-  const prompt =
-    `You help poor and vulnerable people in Mirpur, Dhaka find free help. ` +
-    `The user spoke in Bangla; here is what they said: "${text}".\n\n` +
-    `Pick the single best intentId from this list:${INTENT_HELP}\n\n` +
-    `Then write "replyBn": a SHORT (max 25 words), warm, simple Bangla sentence ` +
-    `telling them what you are showing or doing (e.g. "খাবারের জন্য কাছের জায়গাগুলো দেখাচ্ছি।"). ` +
-    `If intent is unknown, gently ask in Bangla what they need. ` +
-    `Output ONLY the raw JSON object, with no preamble, no explanation and no ` +
-    `code fences: {"intentId": "...", "replyBn": "..."}`;
+
+  // Build the prompt + parts. With audio, ask Gemini to transcribe AND classify.
+  const promptText = audioBase64
+    ? `You help poor and vulnerable people in Mirpur, Dhaka find free help. ` +
+      `The attached audio is a person speaking in Bangla. First, transcribe ` +
+      `exactly what they said into "transcript" (in Bangla). Then pick the ` +
+      `single best intentId from this list:${INTENT_HELP}\n\n` +
+      `Then write "replyBn": a SHORT (max 25 words), warm, simple Bangla sentence ` +
+      `telling them what you are showing or doing. If unclear, intentId="unknown" ` +
+      `and gently ask in Bangla what they need. Output ONLY raw JSON, no preamble, ` +
+      `no code fences: {"transcript":"...","intentId":"...","replyBn":"..."}`
+    : `You help poor and vulnerable people in Mirpur, Dhaka find free help. ` +
+      `The user spoke in Bangla; here is what they said: "${text}".\n\n` +
+      `Pick the single best intentId from this list:${INTENT_HELP}\n\n` +
+      `Then write "replyBn": a SHORT (max 25 words), warm, simple Bangla sentence ` +
+      `telling them what you are showing or doing (e.g. "খাবারের জন্য কাছের জায়গাগুলো দেখাচ্ছি।"). ` +
+      `If intent is unknown, gently ask in Bangla what they need. ` +
+      `Output ONLY the raw JSON object, with no preamble, no explanation and no ` +
+      `code fences: {"transcript":"${text}","intentId": "...", "replyBn": "..."}`;
+
+  const parts = audioBase64
+    ? [{ text: promptText }, { inlineData: { mimeType: audioMime, data: audioBase64 } }]
+    : [{ text: promptText }];
 
   try {
     const body = JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
+      contents: [{ parts }],
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.2,
@@ -124,7 +143,8 @@ export async function POST(req) {
     ];
     const intentId = VALID.includes(parsed.intentId) ? parsed.intentId : "unknown";
     const replyBn = String(parsed.replyBn || "").slice(0, 300);
-    return NextResponse.json({ ok: true, intentId, replyBn, model: usedModel });
+    const transcript = String(parsed.transcript || text || "").slice(0, 400);
+    return NextResponse.json({ ok: true, intentId, replyBn, transcript, model: usedModel });
   } catch (e) {
     return NextResponse.json({ ok: false, reason: "exception", detail: String(e) }, { status: 502 });
   }

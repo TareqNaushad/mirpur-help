@@ -1,197 +1,191 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { VOICE_INTENTS, matchIntent, VOICE_MENU } from "../data/voiceIntents";
-import { speak } from "./tts";
+import { useRef, useState } from "react";
+import { VOICE_INTENTS, VOICE_MENU } from "../data/voiceIntents";
+import { speak, stopSpeaking } from "./tts";
 
 const PROMPT =
   "বলুন, আপনার কী দরকার? যেমন — খাবার, ঔষধ, ডাক্তার, থাকার জায়গা, কাপড়, টাকা, অথবা জরুরি সাহায্য।";
 
+const MAX_SECONDS = 6; // auto-stop recording after this long
+
+function actionForIntent(intentId) {
+  if (!intentId || intentId === "unknown") return null;
+  const it = VOICE_INTENTS.find((i) => i.id === intentId);
+  return it ? it.action : null;
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve) => {
+    const r = new FileReader();
+    r.onloadend = () => resolve(String(r.result).split(",")[1] || "");
+    r.readAsDataURL(blob);
+  });
+}
+
 export default function VoiceAssistant({ onCommand, categoryServices }) {
   const [open, setOpen] = useState(false);
-  const [supported, setSupported] = useState(true);
-  const [status, setStatus] = useState("idle"); // idle|speaking|listening|result|error|denied
+  const [status, setStatus] = useState("idle"); // idle|speaking|ready|listening|thinking|result|error|denied|unsupported
   const [heard, setHeard] = useState("");
   const [reply, setReply] = useState("");
   const [showMenu, setShowMenu] = useState(false);
+
   const recRef = useRef(null);
-  const gotResultRef = useRef(false);
-  const listeningRef = useRef(false);
+  const chunksRef = useRef([]);
+  const streamRef = useRef(null);
+  const timerRef = useRef(null);
 
-  // Set up SpeechRecognition once.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      setSupported(false);
-      return;
-    }
-    const rec = new SR();
-    rec.lang = "bn-BD";
-    rec.interimResults = false;
-    rec.continuous = false;
-    rec.maxAlternatives = 3;
+  const canRecord =
+    typeof window !== "undefined" &&
+    navigator.mediaDevices &&
+    navigator.mediaDevices.getUserMedia &&
+    typeof window.MediaRecorder !== "undefined";
 
-    rec.onstart = () => {
-      listeningRef.current = true;
-      setStatus("listening");
-    };
-    rec.onresult = (e) => {
-      gotResultRef.current = true;
-      const alts = Array.from(e.results[0]).map((r) => r.transcript);
-      handleResult(alts);
-    };
-    rec.onerror = (e) => {
-      listeningRef.current = false;
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setStatus("denied");
-      } else if (e.error === "no-speech") {
-        setStatus("error");
-        const m = "কিছু শুনতে পাইনি। আবার বলুন, অথবা নিচ থেকে বেছে নিন।";
-        setReply(m);
-        speak(m);
-      } else {
-        setStatus("error");
-      }
-      setShowMenu(true);
-    };
-    rec.onend = () => {
-      listeningRef.current = false;
-      // Ended without any result -> let the user retry / use the menu.
-      if (!gotResultRef.current) {
-        setStatus((s) => (s === "denied" ? s : "error"));
-        setShowMenu(true);
-      }
-    };
-
-    recRef.current = rec;
-    // Warm up the voice list (Android loads voices async).
-    const warm = () => window.speechSynthesis && window.speechSynthesis.getVoices();
-    warm();
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = warm;
-    }
-    return () => {
-      try {
-        rec.abort();
-      } catch {}
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function startListening() {
-    if (!recRef.current) return;
-    gotResultRef.current = false;
-    setHeard("");
-    setStatus("listening");
-    try {
-      recRef.current.start();
-    } catch {
-      // Already running — restart cleanly.
-      try {
-        recRef.current.stop();
-        setTimeout(() => recRef.current.start(), 250);
-      } catch {}
-    }
-  }
-
-  // Opening the assistant: speak the prompt, then wait for the user to tap
-  // "press to speak". On mobile, mic capture (recognition.start) ONLY works
-  // when called from a fresh user tap — not from an async callback after audio.
-  // So we never auto-start; the big "press to speak" button does it.
   function begin() {
     setOpen(true);
     setReply("");
     setHeard("");
     setShowMenu(false);
+    if (!canRecord) {
+      setStatus("unsupported");
+      setShowMenu(true);
+      return;
+    }
     setStatus("speaking");
     speak(PROMPT, () => setStatus("ready"));
   }
 
-  // Called directly from the "press to speak" button tap (a real user gesture),
-  // which is what mobile browsers require to grant mic access.
-  function pressToSpeak() {
-    startListening();
+  function cleanupStream() {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
   }
 
-  // Build the spoken reply for an intent, then run the action.
-  // replyOverride (from the LLM) is used as the spoken text when present.
-  function runIntent(intent, recognizedText, replyOverride) {
-    setHeard(recognizedText || "");
+  // Tapping "press to speak" — must be a direct user gesture so mobile grants
+  // the mic. We record a few seconds of audio, then send it to Gemini.
+  async function pressToSpeak() {
+    stopSpeaking();
+    setReply("");
+    setHeard("");
+    setShowMenu(false);
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setStatus("denied");
+      setShowMenu(true);
+      return;
+    }
+    streamRef.current = stream;
+
+    let mr;
+    try {
+      mr = new MediaRecorder(stream);
+    } catch {
+      cleanupStream();
+      setStatus("error");
+      setShowMenu(true);
+      return;
+    }
+    chunksRef.current = [];
+    mr.ondataavailable = (e) => {
+      if (e.data && e.data.size) chunksRef.current.push(e.data);
+    };
+    mr.onstop = () => finishRecording(mr.mimeType);
+    recRef.current = mr;
+    mr.start();
+    setStatus("listening");
+    timerRef.current = setTimeout(stopRecording, MAX_SECONDS * 1000);
+  }
+
+  function stopRecording() {
+    clearTimeout(timerRef.current);
+    const mr = recRef.current;
+    if (mr && mr.state !== "inactive") {
+      try {
+        mr.stop();
+      } catch {}
+    }
+    setStatus("thinking");
+  }
+
+  async function finishRecording(mimeType) {
+    cleanupStream();
+    const blob = new Blob(chunksRef.current, { type: mimeType || "audio/webm" });
+    if (!blob.size) {
+      setStatus("error");
+      setShowMenu(true);
+      return;
+    }
+    try {
+      const audioBase64 = await blobToBase64(blob);
+      const r = await fetch("/api/voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audioBase64, mimeType: blob.type }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        respond(actionForIntent(d.intentId), d.transcript || "", d.replyBn || "");
+      } else {
+        const m = "মাফ করবেন, বুঝতে পারিনি। আবার বলুন, অথবা নিচ থেকে বেছে নিন।";
+        setStatus("error");
+        setReply(m);
+        setShowMenu(true);
+        speak(m);
+      }
+    } catch {
+      setStatus("error");
+      setShowMenu(true);
+    }
+  }
+
+  function respond(action, transcript, replyBn) {
+    setHeard(transcript || "");
     setStatus("result");
 
-    if (!intent) {
-      const msg =
-        replyOverride || "আমি ঠিক বুঝতে পারিনি। আবার বলুন, অথবা নিচ থেকে বেছে নিন।";
-      setReply(msg);
+    if (!action) {
+      const m = replyBn || "আমি ঠিক বুঝতে পারিনি। আবার বলুন, অথবা নিচ থেকে বেছে নিন।";
+      setReply(m);
       setShowMenu(true);
-      speak(msg);
+      speak(m);
       return;
     }
 
-    let msg = replyOverride || intent.speakBn;
-    if (intent.action.type === "category" && categoryServices) {
-      const list = categoryServices(intent.action.value) || [];
+    let msg = replyBn || "দেখাচ্ছি…";
+    if (action.type === "category" && categoryServices) {
+      const list = categoryServices(action.value) || [];
       const names = list.slice(0, 3).map((s) => s.nameBn);
       if (names.length) msg += " " + names.join("। ") + "।";
     }
     setReply(msg);
     setShowMenu(false);
     speak(msg, () => {
-      onCommand && onCommand(intent.action);
-      if (intent.action.type !== "route") setOpen(false);
+      onCommand && onCommand(action);
+      if (action.type !== "route") setOpen(false);
     });
   }
 
-  // First try the LLM (free-form Bangla understanding); fall back to offline
-  // keyword matching if there's no key / it's slow / it errors.
-  async function handleResult(alts) {
-    const text = alts[0] || "";
-    setHeard(text);
-    setStatus("thinking");
-
-    let intent = null;
-    let replyOverride = null;
-    try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 6000);
-      const r = await fetch("/api/voice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-        signal: ctrl.signal,
-      });
-      clearTimeout(t);
-      const d = await r.json();
-      if (d.ok) {
-        if (d.intentId && d.intentId !== "unknown") {
-          intent = VOICE_INTENTS.find((i) => i.id === d.intentId) || null;
-        }
-        replyOverride = d.replyBn || null;
-      }
-    } catch {
-      /* network / timeout / no-key → fall back below */
-    }
-
-    // Fallback: offline keyword matching.
-    if (!intent && !replyOverride) intent = matchIntent(alts);
-
-    runIntent(intent, text, replyOverride);
-  }
-
+  // Tapping a fallback chip = same as choosing that intent.
   function chooseMenu(id) {
-    const intent = VOICE_INTENTS.find((i) => i.id === id);
-    if (intent) runIntent(intent, intent.id);
+    const it = VOICE_INTENTS.find((i) => i.id === id);
+    if (it) respond(it.action, labelFor(id), it.speakBn);
   }
 
   function close() {
+    clearTimeout(timerRef.current);
+    const mr = recRef.current;
+    if (mr && mr.state !== "inactive") {
+      try {
+        mr.stop();
+      } catch {}
+    }
+    cleanupStream();
+    stopSpeaking();
     setOpen(false);
     setStatus("idle");
-    try {
-      recRef.current && recRef.current.abort();
-    } catch {}
-    if (typeof window !== "undefined" && window.speechSynthesis)
-      window.speechSynthesis.cancel();
   }
 
   const menuChips = VOICE_MENU.map((id) =>
@@ -212,10 +206,9 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
               ✕
             </button>
 
-            {!supported ? (
+            {status === "unsupported" ? (
               <p className="voice-status">
-                এই ব্রাউজারে ভয়েস কাজ করে না। অনুগ্রহ করে <strong>Chrome</strong>{" "}
-                ব্যবহার করুন, অথবা নিচ থেকে বেছে নিন।
+                এই ব্রাউজারে ভয়েস কাজ করে না। অনুগ্রহ করে নিচ থেকে বেছে নিন।
               </p>
             ) : (
               <>
@@ -237,7 +230,7 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
                 <p className="voice-status">
                   {status === "speaking" && "শুনুন…"}
                   {status === "ready" && "নিচের বোতামে চাপ দিয়ে বলুন 👇"}
-                  {status === "listening" && "এখন বলুন… 🎙️"}
+                  {status === "listening" && "🎙️ বলুন… (শেষ হলে থামুন চাপুন)"}
                   {status === "thinking" && "বুঝছি…"}
                   {status === "result" && "আপনি বলেছেন:"}
                   {status === "error" && "আবার চেষ্টা করুন বা নিচ থেকে বেছে নিন।"}
@@ -268,19 +261,24 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
               </>
             )}
 
-            {/* Big primary button: tapping it starts the mic (required by
-                mobile browsers, which only grant the mic from a direct tap). */}
-            {supported &&
-              status !== "listening" &&
+            {/* While recording: a big STOP button. Otherwise: a big TALK button. */}
+            {status === "listening" ? (
+              <button className="voice-bigtalk voice-stop" onClick={stopRecording}>
+                ⏹️ থামুন
+              </button>
+            ) : (
+              canRecord &&
               status !== "thinking" &&
-              status !== "denied" && (
+              status !== "denied" &&
+              status !== "unsupported" && (
                 <button className="voice-bigtalk" onClick={pressToSpeak}>
                   🎤 চাপ দিয়ে বলুন
                 </button>
-              )}
+              )
+            )}
 
             <div className="voice-actions">
-              {supported && status === "denied" && (
+              {(status === "denied" || status === "unsupported") && (
                 <button className="btn call" onClick={begin}>
                   🔄 আবার চেষ্টা করুন
                 </button>
@@ -290,7 +288,7 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
               </button>
             </div>
 
-            {(showMenu || !supported || status === "denied") && (
+            {(showMenu || status === "unsupported" || status === "denied") && (
               <div className="voice-menu">
                 {menuChips.map((i) => (
                   <button key={i.id} className="chip" onClick={() => chooseMenu(i.id)}>

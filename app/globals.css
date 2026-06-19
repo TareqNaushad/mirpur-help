@@ -296,6 +296,9 @@ body {
 .voice-bigtalk:active {
   transform: scale(0.97);
 }
+.voice-bigtalk.voice-stop {
+  background: linear-gradient(135deg, #c1121f, #9d0208);
+}
 .voice-replay {
   display: inline-block;
   margin-left: 6px;
