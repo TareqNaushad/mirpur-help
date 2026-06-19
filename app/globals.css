@@ -162,6 +162,27 @@ body {
   text-decoration: none;
 }
 
+/* ---------- Install (PWA) button ---------- */
+.install-btn {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 84px;
+  z-index: 1001;
+  background: #2563eb;
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+.install-btn:active {
+  transform: translateX(-50%) scale(0.97);
+}
+
 /* ---------- Voice assistant ---------- */
 .voice-hint {
   margin: 8px 0 0 !important;
