@@ -11,6 +11,7 @@ import {
 } from "../data/services";
 import { upcomingEvents } from "../data/events";
 import VoiceAssistant from "../components/VoiceAssistant";
+import { speak as ttsSpeak } from "../components/tts";
 
 // Leaflet must not render on the server.
 const MapView = dynamic(() => import("../components/MapView"), {
@@ -18,15 +19,10 @@ const MapView = dynamic(() => import("../components/MapView"), {
   loading: () => <div className="empty">মানচিত্র লোড হচ্ছে…</div>,
 });
 
-// Read a service aloud in Bangla (works on phones that support TTS).
+// Read a service aloud in Bangla via the shared proxy TTS (works on any device).
 function speak(service) {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
   const text = `${service.nameBn}। ${service.descBn} অবস্থান: ${service.area}।`;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "bn-BD";
-  u.rate = 0.95;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(u);
+  ttsSpeak(text);
 }
 
 function directionsUrl(s) {

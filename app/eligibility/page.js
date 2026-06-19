@@ -3,15 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { QUESTIONS, evaluate } from "../../data/eligibility";
-
-function speak(text) {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "bn-BD";
-  u.rate = 0.95;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(u);
-}
+import { speak, stopSpeaking } from "../../components/tts";
 
 export default function Eligibility() {
   const [answers, setAnswers] = useState({});
@@ -42,8 +34,7 @@ export default function Eligibility() {
     setAnswers({});
     setStep(0);
     setDone(false);
-    if (typeof window !== "undefined" && window.speechSynthesis)
-      window.speechSynthesis.cancel();
+    stopSpeaking();
   }
 
   const progress = done
