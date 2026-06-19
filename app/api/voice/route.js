@@ -12,8 +12,43 @@
 // ---------------------------------------------------------------------------
 
 import { NextResponse } from "next/server";
+import servicesData from "../../../data/services.json";
+import eventsData from "../../../data/events.json";
+import { PROGRAMS } from "../../../data/eligibility";
 
 export const dynamic = "force-dynamic";
+
+// Build a compact Bangla knowledge base from the app's data so the assistant
+// can ANSWER real questions (address, phone, hours, how to apply) — not just
+// navigate. Kept short so it fits comfortably in the prompt.
+function buildKnowledgeBase() {
+  const lines = [];
+  lines.push("সেবাকেন্দ্র (Services):");
+  for (const s of servicesData.services) {
+    lines.push(
+      `• ${s.nameBn} — ঠিকানা/এলাকা: ${s.area}; ফোন: ${s.phone || "নেই"}; সময়: ${s.hours || "—"}; সেবা: ${s.descBn}`
+    );
+  }
+  lines.push("\nজরুরি নম্বর (Helplines):");
+  for (const h of servicesData.helplines) {
+    lines.push(`• ${h.bn}: ${h.number}`);
+  }
+  lines.push("\nবিনা মূল্যে শিবির/ইভেন্ট (Free camps):");
+  for (const e of eventsData.events) {
+    lines.push(
+      `• ${e.titleBn} (${e.organizerBn}) — স্থান: ${e.location}; তারিখ: ${e.date} ${e.startTime || ""}-${e.endTime || ""}; ফোন: ${e.phone || "নেই"}`
+    );
+  }
+  lines.push("\nসরকারি ভাতা ও সহায়তা (Govt allowances):");
+  for (const p of PROGRAMS) {
+    lines.push(
+      `• ${p.nameBn} — সুবিধা: ${p.benefitBn} আবেদন: ${p.applyBn} প্রয়োজন: ${p.docsBn}`
+    );
+  }
+  return lines.join("\n");
+}
+
+const KNOWLEDGE_BASE = buildKnowledgeBase();
 
 const INTENT_HELP = `
 - food: needs food / is hungry (খাবার, খিদে)
@@ -57,24 +92,30 @@ export async function POST(req) {
     "gemini-2.0-flash-001",
   ].filter(Boolean);
 
-  // Build the prompt + parts. With audio, ask Gemini to transcribe AND classify.
+  // Shared instructions: classify intent for navigation AND answer real
+  // questions (address, phone, hours, how to apply) from the knowledge base.
+  const RULES =
+    `You are a warm, caring voice assistant for a service that helps poor and ` +
+    `vulnerable people in Mirpur, Dhaka. Always answer in simple spoken Bangla.\n\n` +
+    `KNOWLEDGE BASE (use ONLY this for facts — addresses, phones, hours, how to apply):\n` +
+    `${KNOWLEDGE_BASE}\n\n` +
+    `Do TWO things:\n` +
+    `1) "intentId": pick the single best from this list so the app can open the ` +
+    `right screen:${INTENT_HELP}\n` +
+    `2) "replyBn": a short, warm Bangla reply (max 45 words) to SPEAK aloud. ` +
+    `IMPORTANT: if the person asks for specific information (an address, phone ` +
+    `number, opening hours, what a place offers, or how to apply for an ` +
+    `allowance), ANSWER it directly from the knowledge base in replyBn — say the ` +
+    `address and phone number clearly so it can be read aloud. Do not invent ` +
+    `facts; if not in the knowledge base, say you don't know and suggest calling ` +
+    `333. If it's just a general need, replyBn says what you are showing.\n` +
+    `Output ONLY raw JSON, no preamble, no code fences: ` +
+    `{"transcript":"...","intentId":"...","replyBn":"..."}`;
+
   const promptText = audioBase64
-    ? `You help poor and vulnerable people in Mirpur, Dhaka find free help. ` +
-      `The attached audio is a person speaking in Bangla. First, transcribe ` +
-      `exactly what they said into "transcript" (in Bangla). Then pick the ` +
-      `single best intentId from this list:${INTENT_HELP}\n\n` +
-      `Then write "replyBn": a SHORT (max 25 words), warm, simple Bangla sentence ` +
-      `telling them what you are showing or doing. If unclear, intentId="unknown" ` +
-      `and gently ask in Bangla what they need. Output ONLY raw JSON, no preamble, ` +
-      `no code fences: {"transcript":"...","intentId":"...","replyBn":"..."}`
-    : `You help poor and vulnerable people in Mirpur, Dhaka find free help. ` +
-      `The user spoke in Bangla; here is what they said: "${text}".\n\n` +
-      `Pick the single best intentId from this list:${INTENT_HELP}\n\n` +
-      `Then write "replyBn": a SHORT (max 25 words), warm, simple Bangla sentence ` +
-      `telling them what you are showing or doing (e.g. "খাবারের জন্য কাছের জায়গাগুলো দেখাচ্ছি।"). ` +
-      `If intent is unknown, gently ask in Bangla what they need. ` +
-      `Output ONLY the raw JSON object, with no preamble, no explanation and no ` +
-      `code fences: {"transcript":"${text}","intentId": "...", "replyBn": "..."}`;
+    ? `${RULES}\n\nThe attached audio is the person speaking in Bangla. First ` +
+      `transcribe exactly what they said into "transcript".`
+    : `${RULES}\n\nThe person said (in Bangla): "${text}". Put it in "transcript".`;
 
   const parts = audioBase64
     ? [{ text: promptText }, { inlineData: { mimeType: audioMime, data: audioBase64 } }]
@@ -142,7 +183,7 @@ export async function POST(req) {
       "education", "eligibility", "events", "post-need", "emergency", "unknown",
     ];
     const intentId = VALID.includes(parsed.intentId) ? parsed.intentId : "unknown";
-    const replyBn = String(parsed.replyBn || "").slice(0, 300);
+    const replyBn = String(parsed.replyBn || "").slice(0, 700);
     const transcript = String(parsed.transcript || text || "").slice(0, 400);
     return NextResponse.json({ ok: true, intentId, replyBn, transcript, model: usedModel });
   } catch (e) {
