@@ -95,38 +95,23 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
     }
   }
 
+  // Opening the assistant: speak the prompt, then wait for the user to tap
+  // "press to speak". On mobile, mic capture (recognition.start) ONLY works
+  // when called from a fresh user tap — not from an async callback after audio.
+  // So we never auto-start; the big "press to speak" button does it.
   function begin() {
     setOpen(true);
     setReply("");
     setHeard("");
     setShowMenu(false);
     setStatus("speaking");
+    speak(PROMPT, () => setStatus("ready"));
+  }
 
-    // Request mic permission WITHOUT awaiting before we speak — awaiting here
-    // would break the user-gesture context and browsers would then block all
-    // audio. So: kick off permission as a promise, speak the prompt right now
-    // (inside the tap), and only listen once permission resolves.
-    const micPromise =
-      navigator.mediaDevices && navigator.mediaDevices.getUserMedia
-        ? navigator.mediaDevices
-            .getUserMedia({ audio: true })
-            .then((s) => {
-              s.getTracks().forEach((t) => t.stop());
-              return true;
-            })
-            .catch(() => false)
-        : Promise.resolve(true);
-
-    // Speak the prompt immediately within the tap gesture (unlocks audio).
-    speak(PROMPT, async () => {
-      const okMic = await micPromise;
-      if (okMic === false) {
-        setStatus("denied");
-        setShowMenu(true);
-        return;
-      }
-      startListening();
-    });
+  // Called directly from the "press to speak" button tap (a real user gesture),
+  // which is what mobile browsers require to grant mic access.
+  function pressToSpeak() {
+    startListening();
   }
 
   // Build the spoken reply for an intent, then run the action.
@@ -251,6 +236,7 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
                 </div>
                 <p className="voice-status">
                   {status === "speaking" && "শুনুন…"}
+                  {status === "ready" && "নিচের বোতামে চাপ দিয়ে বলুন 👇"}
                   {status === "listening" && "এখন বলুন… 🎙️"}
                   {status === "thinking" && "বুঝছি…"}
                   {status === "result" && "আপনি বলেছেন:"}
@@ -282,10 +268,21 @@ export default function VoiceAssistant({ onCommand, categoryServices }) {
               </>
             )}
 
+            {/* Big primary button: tapping it starts the mic (required by
+                mobile browsers, which only grant the mic from a direct tap). */}
+            {supported &&
+              status !== "listening" &&
+              status !== "thinking" &&
+              status !== "denied" && (
+                <button className="voice-bigtalk" onClick={pressToSpeak}>
+                  🎤 চাপ দিয়ে বলুন
+                </button>
+              )}
+
             <div className="voice-actions">
-              {supported && status !== "denied" && (
+              {supported && status === "denied" && (
                 <button className="btn call" onClick={begin}>
-                  🎤 আবার বলুন
+                  🔄 আবার চেষ্টা করুন
                 </button>
               )}
               <button className="btn" onClick={() => setShowMenu(true)}>

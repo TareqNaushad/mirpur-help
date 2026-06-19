@@ -279,6 +279,23 @@ body {
   font-size: 15px;
   padding: 10px 14px;
 }
+.voice-bigtalk {
+  display: block;
+  width: 100%;
+  margin: 14px 0 4px;
+  background: linear-gradient(135deg, #1d8a4e, #156b3c);
+  color: #fff;
+  border: 0;
+  border-radius: 16px;
+  padding: 18px;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+.voice-bigtalk:active {
+  transform: scale(0.97);
+}
 .voice-replay {
   display: inline-block;
   margin-left: 6px;
