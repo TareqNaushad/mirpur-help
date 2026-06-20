@@ -1,6 +1,7 @@
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import RegisterSW from "../components/RegisterSW";
+import OfflineBanner from "../components/OfflineBanner";
 
 export const metadata = {
   title: "মিরপুর সাহায্য — Mirpur Help",
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
     <html lang="bn">
       <body>
         <RegisterSW />
+        <OfflineBanner />
         {children}
       </body>
     </html>

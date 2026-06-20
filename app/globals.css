@@ -162,6 +162,19 @@ body {
   text-decoration: none;
 }
 
+/* ---------- Offline banner ---------- */
+.offline-banner {
+  position: sticky;
+  top: 0;
+  z-index: 1200;
+  background: #5d4037;
+  color: #fff;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 7px 10px;
+}
+
 /* ---------- Install (PWA) button ---------- */
 .install-btn {
   position: fixed;
