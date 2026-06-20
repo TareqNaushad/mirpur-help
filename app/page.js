@@ -194,6 +194,10 @@ export default function Home() {
               numbers above in an emergency.
             </em>
           </div>
+
+          <Link href="/test-call" className="test-link">
+            📞 ফোন লাইন টেস্ট করুন (Phone line test)
+          </Link>
         </>
       )}
 
